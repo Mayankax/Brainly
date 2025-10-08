@@ -1,4 +1,7 @@
 import mongoose,{model,Schema} from 'mongoose';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 mongoose.connect(process.env.MONGODB_URL!)
   .then(() => console.log("✅ MongoDB connected"))
