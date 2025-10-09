@@ -60,9 +60,37 @@ app.post("/api/v1/signup", async (req, res) => {
 });
 
 
-app.post("/api/v1/signin",(req,res)=>{
+app.post("/api/v1/signin", async (req, res) => {
+  try {
+    const { username, password } = req.body;
 
-})
+    const existingUser = await UserModel.findOne({ username });
+    if (!existingUser) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: existingUser._id, username: existingUser.username },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({
+      message: "Login successfully",
+      token
+    });
+
+  } catch (error: any) {
+    console.error("Signin error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 app.post("/api/v1/content",(req,res)=>{
 
@@ -85,5 +113,5 @@ app.get("/api/v1/brain/:shareLink",(req,res)=>{
 })
 
 app.listen(3000,()=>{
-    console.log("https://localhost:3000");
+    console.log("http://localhost:3000");
 });
