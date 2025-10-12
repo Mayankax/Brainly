@@ -1,12 +1,14 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import { UserModel } from "./db.js";
+import { ContentModel, UserModel } from "./db.js";
 import bcrypt from "bcrypt";
 import { z } from "zod";
+import { userMiddleware } from "./middleware.js";
 
 
 const app=express();
-app.use(express.json());
+app.use(express.json({ strict: false }));
+
 
 
 const signupSchema = z.object({
@@ -44,7 +46,7 @@ app.post("/api/v1/signup", async (req, res) => {
     );
 
     res.status(201).json({
-      message: "User created successfully",
+      message: "User created successfullyyy",
       token
     });
 
@@ -92,17 +94,63 @@ app.post("/api/v1/signin", async (req, res) => {
 });
 
 
-app.post("/api/v1/content",(req,res)=>{
+app.post("/api/v1/content", userMiddleware, async (req, res) => {
+  try {
+    const { link, type } = req.body;
 
+    // if (!link || !type) {
+    //   return res.status(400).json({ message: "Link and type are required" });
+    // }
+
+    const content = await ContentModel.create({
+      link,
+      type,
+      //@ts-ignore
+      userId: req.userId,
+      tags: [],
+    });
+
+    res.status(201).json({
+      message: "Content created successfully",
+      content,
+    });
+  } catch (error) {
+    console.error("Content creation error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+app.get("/api/v1/content", userMiddleware,async (req,res)=>{
+    // @ts-ignore
+    const userId=req.userId;
+    const content = await ContentModel.find({
+        userId: userId
+    }).populate('userId','username' );
+    res.json({content});
 })
 
-app.get("/api/v1/content",(req,res)=>{
+app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
+  try {
+    const contentId = req.params.id;
 
-})
+    const result = await ContentModel.deleteOne({
+      _id: contentId,
+      //@ts-ignore
+      userId: req.userId
+    });
 
-app.delete("/api/v1/content/:id",(req,res)=>{
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Content not found or unauthorized" });
+    }
 
-})
+    res.json({ message: "Content deleted successfully" });
+  } catch (error) {
+    console.error("Delete content error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 app.post("/api/v1/brain/share",(req,res)=>{
 
