@@ -4,6 +4,7 @@ import { ContentModel, UserModel } from "./db.js";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 import { userMiddleware } from "./middleware.js";
+import { nanoid } from "nanoid";
 
 
 const app=express();
@@ -152,13 +153,60 @@ app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
 });
 
 
-app.post("/api/v1/brain/share",(req,res)=>{
+app.post("/api/v1/brain/share", userMiddleware, async (req, res) => {
+  try {
+    const { contentId } = req.body;
 
-})
+    if (!contentId) {
+      return res.status(400).json({ message: "contentId is required" });
+    }
 
-app.get("/api/v1/brain/:shareLink",(req,res)=>{
+    // Find the content
+    const content = await ContentModel.findOne({
+      _id: contentId,
+      //@ts-ignore
+      userId: req.userId
+    });
 
-})
+    if (!content) {
+      return res.status(404).json({ message: "Content not found or unauthorized" });
+    }
+
+    // Generate a unique share link
+    const shareLink = nanoid(10); // short unique string
+
+    // Save it in the content (add a shareLink field)
+    content.set("shareLink", shareLink);
+    await content.save();
+
+    res.json({
+      message: "Content shared successfully",
+      shareLink
+    });
+
+  } catch (error) {
+    console.error("Share content error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
+  try {
+    const { shareLink } = req.params;
+
+    const content = await ContentModel.findOne({ shareLink }).populate("userId", "username");
+
+    if (!content) {
+      return res.status(404).json({ message: "Shared content not found" });
+    }
+
+    res.json({ content });
+
+  } catch (error) {
+    console.error("Get shared content error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 app.listen(3000,()=>{
     console.log("http://localhost:3000");
