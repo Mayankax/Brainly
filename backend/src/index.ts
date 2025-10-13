@@ -185,7 +185,7 @@ app.post("/api/v1/brain/share", userMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Share content error:", error);
+    console.error("Share content error:", error)
     res.status(500).json({ message: "Internal server error" });
   }
 });
