@@ -21,7 +21,7 @@ const ContentSchema=new Schema({
     link:String,
     tags:[{type:mongoose.Types.ObjectId,ref:'Tag'}],
     userId:{type:mongoose.Types.ObjectId,ref:'User',required:true},
-    shareLink: { type: String, unique: true, sparse: true }
+    shareLink:{ type: String, unique: true, sparse: true }
 })
 
 export const ContentModel=model('Content',ContentSchema);
